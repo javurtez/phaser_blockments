@@ -1,31 +1,46 @@
-import Constants from "../../Constants";
-import Utilities from "../../Utilities";
+import { Audio } from "../Managers/AssetManager";
 import AudioManager from "../Managers/AudioManager";
+import { EventManager } from "../Managers/EventManager";
+import BaseScene from "./BaseScene";
+import GameUI from "./GameUI";
+import { Constants } from "../Trebert/TBConst";
 import BlockGroupPrefab from "../Prefab/BlockGroupPrefab";
 import PlayerPrefab from "../Prefab/PlayerPrefab";
-import GameOverPanel from "../UI/GameOverPanel";
-import ScorePanel from "../UI/ScorePanel";
+import { TBCloud } from "../Trebert/TBCloud";
+import GameOverScene from "./GameOverScene";
+import { CLOUD, SaveManager } from "../Managers/SaveManager";
 
-export default class GameScene extends Phaser.Scene {
+export default class GameScene extends BaseScene {
     /**
      * Unique name of the scene.
      */
     public static Name = "MainGame";
 
-    scorePanel: ScorePanel;
-    gameOverPanel: GameOverPanel;
-
     player: PlayerPrefab;
     blockGroup: BlockGroupPrefab;
-
-    score: number = 0;
     blockSpeed: number = 4;
+    isGameOver: boolean;
 
-    gameOver: boolean = false;
-
+    public init(): void {
+        super.init();
+    }
     public create(): void {
-        Utilities.LogSceneMethodEntry("MainGame", "create");
+        super.create();
 
+        AudioManager.Instance.playBGM(Audio.street_chaos);
+        this.scene.launch(GameUI.Name);
+    }
+    update(time: number, delta: number): void {
+        this.blockGroup.update(this.blockSpeed * delta);
+    }
+
+    protected initProperty(): void {
+        this.blockSpeed = Phaser.Math.GetSpeed(600, 3.5);
+        this.isGameOver = false;
+
+        TBCloud.setValue("SCORE", 0);
+    }
+    protected initGraphics(): void {
         this.cameras.main.backgroundColor = Phaser.Display.Color.HexStringToColor(Constants.BackgroundHex);
 
         var centerX = this.cameras.main.centerX;
@@ -34,24 +49,17 @@ export default class GameScene extends Phaser.Scene {
         this.player = new PlayerPrefab(this, 100, centerY);
 
         this.blockGroup = new BlockGroupPrefab(this, centerX + 100, centerY, this.player);
+    }
+    protected initListeners(): void {
+        super.initListeners();
 
-        this.scorePanel = new ScorePanel(this, centerX, 20);
-        this.gameOverPanel = new GameOverPanel(this, centerX, centerY);
-
-        this.input.on('pointerdown', () => {
-            if (this.gameOver) return;
-            this.PlayerMove();
+        this.input.on(Phaser.Input.Events.POINTER_DOWN, () => {
+            if (this.isGameOver) return;
+            this.playerMove();
         }, this);
-        
-        AudioManager.Instance.PauseBGM("menuBGM");
-        AudioManager.Instance.PlayBGM("gameBGM");
     }
 
-    update(): void {
-        this.blockGroup.update(this.blockSpeed);
-    }
-
-    private PlayerMove(): void {
+    private playerMove(): void {
         if (this.tweens.isTweening(this.player)) return;
         this.tweens.add({
             targets: this.player,
@@ -60,47 +68,54 @@ export default class GameScene extends Phaser.Scene {
             x: this.player.x + 120,
             yoyo: true,
             onComplete: () => {
-                if (this.score % 10 == 0) {
-                    this.player.GetColor();
+                let score = TBCloud.getValue("SCORE");
+                if (score % 10 == 0) {
+                    this.player.getColor();
                 }
             }
         });
     }
-    public SetScore(): void {
-        this.score++;
-        this.blockSpeed += .2;
-        this.scorePanel.SetScore(this.score);
+    public setScore(): void {
+        TBCloud.modifyValue("SCORE", 1);
+        let score = TBCloud.getValue("SCORE");
+        if (score % 2 == 0 && this.blockSpeed < 0.37) {
+            this.blockSpeed += .01;
+        }
+
+        EventManager.UPDATE_UI.emit("SCORE");
     }
-    public GameOver(): void {
+    public gameOver(): void {
         this.player.setActive(false);
         this.player.setVisible(false);
 
         this.blockSpeed = 0;
-        this.gameOver = true;
-
-        this.gameOverPanel.Open();
-
-        var highScore = parseInt(localStorage.getItem(Constants.ScoreSaveKey)) || 0;
-        var isHighScore = false;
-        if (highScore < this.score) {
-            highScore = this.score;
-            localStorage.setItem(Constants.ScoreSaveKey, highScore.toString());
-            isHighScore = true;
-        }
-        this.gameOverPanel.SetScore(this.score, highScore, isHighScore);
-    }
-    public Retry(): void {
-        this.player.setActive(true);
-        this.player.setVisible(true);
-
-        this.blockSpeed = 4;
-        this.score = 0;
-        this.scorePanel.SetScore(this.score);
-
-        this.gameOverPanel.Close();
+        this.isGameOver = true;
 
         this.time.delayedCall(100, () => {
-            this.gameOver = false;
+            var localHighScore = TBCloud.getValue(CLOUD.HIGHSCORE);
+            let currentScore = TBCloud.getValue("SCORE");
+            if (localHighScore < currentScore) {
+                localHighScore = currentScore;
+                TBCloud.setValue(CLOUD.HIGHSCORE, localHighScore);
+                SaveManager.Instance.saveData();
+            }
+
+            this.scene.stop(GameUI.Name);
+            this.scene.launch(GameOverScene.Name);
         });
+    }
+
+    protected rescale(): void {
+        super.rescale();
+    }
+    protected destroy(): void {
+        this.scene.stop(GameUI.Name);
+
+        super.destroy();
+
+        EventManager.ON_PAUSE.clear();
+        EventManager.ON_UNPAUSE.clear();
+
+        EventManager.CHANGE_LANGUAGE.clear();
     }
 }

@@ -1,4 +1,5 @@
 import { Colors } from "../Config/Colors";
+import { Texture } from "../Managers/AssetManager";
 
 export default class BlockPrefab extends Phaser.GameObjects.Sprite {
 
@@ -6,7 +7,7 @@ export default class BlockPrefab extends Phaser.GameObjects.Sprite {
     currentColor: Colors = Colors.Red;
 
     constructor(scene: Phaser.Scene, x: number, y: number) {
-        super(scene, x, y, "block");
+        super(scene, x, y, Texture.Block.path);
 
         this.setOrigin(.5).setScale(28, 7);
 

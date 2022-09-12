@@ -1,15 +1,29 @@
-import Utilities from "../../Utilities";
-import MenuScene from "./MenuScene";
+import BaseScene from "./BaseScene";
+import Preloader from "./Preloader";
 
-export default class SplashScreen extends Phaser.Scene {
+export default class SplashScreen extends BaseScene {
     /**
      * Unique name of the scene.
      */
     public static Name = "SplashScreen";
 
+    public init(): void {
+        super.init();
+    }
     public create(): void {
-        Utilities.LogSceneMethodEntry("SplashScreen", "create");
+        super.create();
 
-        this.scene.start(MenuScene.Name);
+        this.nextScene();
+    }
+
+    nextScene(): void {
+        this.scene.start(Preloader.Name);
+    }
+
+    protected rescale(): void {
+        super.rescale();
+    }
+    protected destroy(): void {
+        super.destroy();
     }
 }

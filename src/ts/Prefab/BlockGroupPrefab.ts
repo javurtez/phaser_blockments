@@ -1,5 +1,5 @@
-import Utilities from "../../Utilities";
 import { Colors } from "../Config/Colors";
+import { Audio } from "../Managers/AssetManager";
 import AudioManager from "../Managers/AudioManager";
 import GameScene from "../Scene/GameScene";
 import BlockPrefab from "./BlockPrefab";
@@ -37,10 +37,9 @@ export default class BlockGroupPrefab extends Phaser.GameObjects.Container {
             if (playerPrefab) {
                 playerPrefab.active = false;
 
-                AudioManager.Instance.PlaySFXOneShot("breakSfx");
+                AudioManager.Instance.playSFX(Audio.break, .2);
                 if (Colors[playerPrefab.currentColor] === Colors[blockPrefab.currentColor]) {
-                    Utilities.Log("Score");
-                    scene.SetScore();
+                    scene.setScore();
                     crate.active = false;
                     scene.tweens.add({
                         targets: crate,
@@ -49,8 +48,7 @@ export default class BlockGroupPrefab extends Phaser.GameObjects.Container {
                     })
                 }
                 else {
-                    Utilities.Log("Error");
-                    scene.GameOver();
+                    scene.gameOver();
                 }
                 scene.time.delayedCall(200, () => {
                     playerPrefab.active = true;
@@ -63,7 +61,7 @@ export default class BlockGroupPrefab extends Phaser.GameObjects.Container {
 
     public update(speed: number): void {
         this.blockArray.forEach((block) => {
-            block.y += speed * .2;
+            block.y += speed;
 
             if (block.y >= 350) {
                 block.UpdatePosition();

@@ -2,11 +2,12 @@ export default class JSONManager {
     private static jsonManagerSingleton: JSONManager;
     private static jsonCache: Phaser.Cache.BaseCache;
 
-    public static Init(p: Phaser.Scene): void {
+    public static init(p: Phaser.Scene): void {
         if (!JSONManager.jsonManagerSingleton) {
             this.jsonManagerSingleton = new JSONManager();
             this.jsonCache = p.cache.json;
-        } else {
+        }
+        else {
             throw new Error('You can only initialize one manager instance');
         }
     }
@@ -19,7 +20,7 @@ export default class JSONManager {
         return JSONManager.jsonManagerSingleton;
     }
 
-    public GetJSON(name: string) {
-        return JSONManager.jsonCache.get(name);
+    public getJSON(key: any) {
+        return JSONManager.jsonCache.get(key.path);
     }
 }

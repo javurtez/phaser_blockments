@@ -1,22 +1,24 @@
 import { Colors } from "../Config/Colors";
+import { Texture } from "../Managers/AssetManager";
 
 export default class PlayerPrefab extends Phaser.GameObjects.Sprite {
 
     public currentColor: Colors = Colors.Red;
 
     constructor(scene: Phaser.Scene, x: number, y: number) {
-        super(scene, x, y, "block");
+        super(scene, x, y, Texture.Block.path);
 
-        this.setOrigin(.5).setScale(25, 5);
+        this.setOrigin(.5)
+        this.setScale(25, 5);
 
-        this.GetColor();
+        this.getColor();
 
         scene.physics.add.existing(this);
 
         scene.add.existing(this);
     }
 
-    public GetColor(): void {
+    public getColor(): void {
         var random = Phaser.Math.Between(0, 100);
 
         if (random < 30) {
